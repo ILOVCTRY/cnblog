@@ -214,48 +214,50 @@
       var dateText = '';
       var dayTitle = day.querySelector('.dayTitle');
       if (dayTitle) { dateText = dayTitle.textContent.trim(); dayTitle.remove(); }
-      var children = Array.prototype.slice.call(day.childNodes);
-      var i = 0;
-      while (i < children.length) {
-        var el = children[i];
-        var next = children[i + 1];
-        if (el.nodeType === 1 && el.classList.contains('postTitle') && next && next.nodeType === 1 && next.classList.contains('postCon')) {
-          var titleText = el.textContent.trim();
-          var bodyHTML = next.innerHTML;
-          var coverUrl = getCoverUrl(titleText, bodyHTML);
-          var card = document.createElement('article');
-          card.className = 'cn-post-card cn-reveal';
+      var titles = Array.prototype.slice.call(day.querySelectorAll('.postTitle'));
+      titles.forEach(function (el) {
+        var con = el.nextElementSibling;
+        while (con && !con.classList.contains('postCon') && !con.classList.contains('postTitle')) con = con.nextElementSibling;
+        if (!con || !con.classList.contains('postCon')) return;
+        var desc = con.nextElementSibling;
+        while (desc && !desc.classList.contains('postDesc') && !desc.classList.contains('postTitle')) desc = desc.nextElementSibling;
+        if (desc && !desc.classList.contains('postDesc')) desc = null;
 
-          /* cover */
-          var cover = document.createElement('div');
-          cover.className = 'cn-post-card__cover';
-          if (coverUrl) {
-            cover.style.setProperty('--cn-card-cover', 'url("' + coverUrl.replace(/"/g, '\\"') + '")');
-          } else {
-            cover.style.setProperty('--cn-card-grad', gradients[hashStr(titleText) % gradients.length]);
-          }
-          if (dateText) {
-            var dateEl = document.createElement('span');
-            dateEl.className = 'cn-post-card__date';
-            dateEl.textContent = dateText;
-            cover.appendChild(dateEl);
-          }
-          var titleEl = document.createElement('h3');
-          titleEl.className = 'cn-post-card__title';
-          titleEl.innerHTML = el.innerHTML;
-          cover.appendChild(titleEl);
-          card.appendChild(cover);
+        var titleText = el.textContent.trim();
+        var bodyHTML = con.innerHTML;
+        var coverUrl = getCoverUrl(titleText, bodyHTML);
+        var card = document.createElement('article');
+        card.className = 'cn-post-card cn-reveal';
 
-          /* body */
-          var body = document.createElement('div');
-          body.className = 'cn-post-card__body';
-          body.appendChild(next);
-          card.appendChild(body);
+        /* cover */
+        var cover = document.createElement('div');
+        cover.className = 'cn-post-card__cover';
+        if (coverUrl) {
+          cover.style.setProperty('--cn-card-cover', 'url("' + coverUrl.replace(/"/g, '\\"') + '")');
+        } else {
+          cover.style.setProperty('--cn-card-grad', gradients[hashStr(titleText) % gradients.length]);
+        }
+        if (dateText) {
+          var dateEl = document.createElement('span');
+          dateEl.className = 'cn-post-card__date';
+          dateEl.textContent = dateText;
+          cover.appendChild(dateEl);
+        }
+        var titleEl = document.createElement('h3');
+        titleEl.className = 'cn-post-card__title';
+        titleEl.innerHTML = el.innerHTML;
+        cover.appendChild(titleEl);
+        card.appendChild(cover);
 
-          forFlow.insertBefore(card, day);
-          i += 2;
-        } else { i++; }
-      }
+        /* body */
+        var body = document.createElement('div');
+        body.className = 'cn-post-card__body';
+        body.appendChild(con);
+        if (desc) body.appendChild(desc);
+        card.appendChild(body);
+
+        forFlow.insertBefore(card, day);
+      });
       day.remove();
     });
   }

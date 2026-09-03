@@ -247,70 +247,99 @@ a:hover { color:var(--cn-accent-2); text-decoration:underline; }
 #blog-calendar td { padding:4px 2px; text-align:center; font-size:12px; }
 #blog-calendar a { color:var(--cn-accent); font-weight:600; }
 
-/* ========= Post List — cover cards ========= */
-.forFlow { margin:0; display:flex; flex-direction:column; gap:16px; }
-.cn-post-card {
+/* ========= Post List — glass card grid ========= */
+.forFlow {
+  margin:0; display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:20px;
+}
+/* 按日期分割的标题行与分隔线：彻底去掉 */
+.dayTitle, .postSeparator { display:none!important; }
+
+/* 毛玻璃卡片外壳 — JS 重组后的 .cn-post-card 与未加载 JS 时的 .day 共用 */
+.day, .cn-post-card {
   position:relative; overflow:hidden;
   margin:0; padding:0;
-  background:var(--cn-surface);
-  border:1px solid var(--cn-border-soft);
-  border-radius:var(--cn-radius);
-  box-shadow:var(--cn-shadow);
-  backdrop-filter:blur(8px);
-  transition:box-shadow .3s,transform .3s,border-color .3s;
+  background:rgba(255,255,255,.45);
+  border:1px solid rgba(255,255,255,.60);
+  border-radius:var(--cn-radius-lg);
+  box-shadow:0 8px 32px rgba(27,38,52,.08);
+  backdrop-filter:blur(16px) saturate(140%);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);
+  transition:box-shadow .35s,transform .35s,border-color .35s;
+  display:flex; flex-direction:column;
 }
-.cn-post-card:hover {
-  box-shadow:var(--cn-shadow-hover);
+:root[data-cn-theme='dark'] .day,
+:root[data-cn-theme='dark'] .cn-post-card {
+  background:rgba(22,28,39,.50);
+  border-color:rgba(129,140,248,.15);
+}
+.day:hover, .cn-post-card:hover {
+  box-shadow:0 16px 48px rgba(79,70,229,.15);
   border-color:var(--cn-accent);
-  transform:translateY(-3px);
+  transform:translateY(-4px);
 }
 
-/* cover banner */
+/* 封面横幅（JS 重组后） */
 .cn-post-card__cover {
-  position:relative; height:130px; overflow:hidden;
+  position:relative; height:140px; overflow:hidden;
   background:var(--cn-card-grad,var(--cn-gradient)) center/cover;
   background-image:var(--cn-card-cover,none);
   background-size:cover; background-position:center;
   transition:transform .4s;
 }
-.cn-post-card:hover .cn-post-card__cover { transform:scale(1.05); }
+.cn-post-card:hover .cn-post-card__cover { transform:scale(1.06); }
 .cn-post-card__cover::after {
   content:""; position:absolute; inset:0;
-  background:linear-gradient(180deg,rgba(0,0,0,.10) 0%,rgba(0,0,0,.60) 100%);
+  background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.55) 100%);
 }
 .cn-post-card__date {
-  position:absolute; z-index:2; top:12px; left:16px;
-  color:rgba(255,255,255,.75); font-size:12px; font-weight:500;
-  text-shadow:0 1px 4px rgba(0,0,0,.3);
+  position:absolute; z-index:2; top:10px; left:14px;
+  padding:2px 10px; border-radius:20px;
+  background:rgba(0,0,0,.25); backdrop-filter:blur(8px);
+  color:rgba(255,255,255,.85); font-size:11px; font-weight:500;
 }
 .cn-post-card__title {
-  position:absolute; z-index:2; bottom:12px; left:16px; right:16px;
-  margin:0; font-size:20px; font-weight:700; line-height:1.4;
+  position:absolute; z-index:2; bottom:10px; left:14px; right:14px;
+  margin:0; font-size:17px; font-weight:700; line-height:1.35;
   letter-spacing:-.01em;
 }
 .cn-post-card__title a {
-  color:#fff; text-decoration:none; text-shadow:0 2px 8px rgba(0,0,0,.4);
+  color:#fff; text-decoration:none; text-shadow:0 2px 8px rgba(0,0,0,.5);
   transition:color .2s;
 }
 .cn-post-card__title a:hover { color:var(--cn-accent-2); text-decoration:none; }
 
-/* body area */
-.cn-post-card__body { padding:14px 18px; }
-.cn-post-card__body .postBody {
-  margin:0; padding:0; color:var(--cn-muted); font-size:13px; line-height:1.7;
+/* 未加载 JS 时的 .day 原始结构兜底样式 */
+.day .postTitle {
+  margin:0; padding:16px 18px 6px;
+  font-size:17px; line-height:1.4; font-weight:700; letter-spacing:-.01em;
 }
-.cn-post-card__body .postBody::before {
-  content:"摘要"; display:inline-block;
-  margin-right:8px; padding:1px 7px; border-radius:4px;
-  background:var(--cn-gradient-soft); color:var(--cn-accent);
-  font-size:11px; font-weight:600; vertical-align:1px;
+.day .postTitle a, .day .postTitle .postTitle2 {
+  color:var(--cn-text); transition:color .2s;
 }
-.cn-post-card__body .postDesc {
-  margin:12px 0 0; padding:10px 0 0; color:var(--cn-muted); font-size:11px;
+.day .postTitle a:hover, .day .postTitle .postTitle2:hover {
+  color:var(--cn-accent); text-decoration:none;
+}
+.day .postCon { margin:0; padding:0 18px; flex:1; }
+.day .postDesc { margin-top:auto; padding:10px 18px 14px; }
+.day .postDesc, .cn-post-card__body .postDesc {
+  color:var(--cn-muted); font-size:10px;
   border-top:1px solid var(--cn-border-soft);
 }
 .postDesc a { color:var(--cn-muted); }
 .postDesc a:hover { color:var(--cn-accent); }
+
+/* 摘要区 — 列表页摘要在 .c_b_p_desc */
+.c_b_p_desc {
+  margin:0; color:var(--cn-muted); font-size:12px; line-height:1.65;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.c_b_p_desc .c_b_p_desc_readmore { white-space:nowrap; margin-left:6px; }
+.cn-post-card__body { padding:12px 16px; flex:1; display:flex; flex-direction:column; }
+.cn-post-card__body .postDesc { margin:10px 0 0; padding:10px 0 0; }
+.cn-post-card__body .c_b_p_desc { flex:1; }
 
 /* ========= Article Hero Banner (detail page) ========= */
 .cn-article-hero {
@@ -582,10 +611,11 @@ a:hover { color:var(--cn-accent-2); text-decoration:underline; }
   .cn-theme-subtitle { display:none; }
   #home { margin-top:16px; }
   #mainContent { padding:24px 18px; border-radius:var(--cn-radius); }
-  .cn-post-card__cover { height:90px; }
-  .cn-post-card__title { font-size:17px; left:14px; right:14px; bottom:10px; }
-  .cn-post-card__date { top:8px; left:14px; font-size:11px; }
-  .cn-post-card__body { padding:12px 14px; }
+  .forFlow { grid-template-columns:1fr; gap:14px; }
+  .cn-post-card__cover { height:110px; }
+  .cn-post-card__title { font-size:16px; left:12px; right:12px; bottom:8px; }
+  .cn-post-card__date { top:8px; left:12px; font-size:10px; }
+  .cn-post-card__body { padding:10px 14px; }
   .cn-article-hero { height:200px; }
   .cn-article-hero__title { font-size:22px; left:20px; right:20px; bottom:60px; }
   .cn-article-hero__quote { left:20px; right:20px; bottom:16px; font-size:13px; }
