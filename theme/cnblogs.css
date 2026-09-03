@@ -253,7 +253,11 @@ a:hover { color:var(--cn-accent-2); text-decoration:underline; }
   grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
   gap:20px;
 }
-.cn-post-card {
+/* 按日期分割的标题行与分隔线：彻底去掉 */
+.dayTitle, .postSeparator { display:none!important; }
+
+/* 毛玻璃卡片外壳 — JS 重组后的 .cn-post-card 与未加载 JS 时的 .day 共用 */
+.day, .cn-post-card {
   position:relative; overflow:hidden;
   margin:0; padding:0;
   background:rgba(255,255,255,.45);
@@ -265,17 +269,18 @@ a:hover { color:var(--cn-accent-2); text-decoration:underline; }
   transition:box-shadow .35s,transform .35s,border-color .35s;
   display:flex; flex-direction:column;
 }
+:root[data-cn-theme='dark'] .day,
 :root[data-cn-theme='dark'] .cn-post-card {
   background:rgba(22,28,39,.50);
   border-color:rgba(129,140,248,.15);
 }
-.cn-post-card:hover {
+.day:hover, .cn-post-card:hover {
   box-shadow:0 16px 48px rgba(79,70,229,.15);
   border-color:var(--cn-accent);
   transform:translateY(-4px);
 }
 
-/* cover banner */
+/* 封面横幅（JS 重组后） */
 .cn-post-card__cover {
   position:relative; height:140px; overflow:hidden;
   background:var(--cn-card-grad,var(--cn-gradient)) center/cover;
@@ -305,26 +310,36 @@ a:hover { color:var(--cn-accent-2); text-decoration:underline; }
 }
 .cn-post-card__title a:hover { color:var(--cn-accent-2); text-decoration:none; }
 
-/* body area */
-.cn-post-card__body { padding:12px 16px; flex:1; display:flex; flex-direction:column; }
-.cn-post-card__body .postBody {
-  margin:0; padding:0; color:var(--cn-muted); font-size:12px; line-height:1.65;
-  flex:1;
-  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
-  overflow:hidden;
+/* 未加载 JS 时的 .day 原始结构兜底样式 */
+.day .postTitle {
+  margin:0; padding:16px 18px 6px;
+  font-size:17px; line-height:1.4; font-weight:700; letter-spacing:-.01em;
 }
-.cn-post-card__body .postBody::before {
-  content:"摘要"; display:inline-block;
-  margin-right:6px; padding:1px 6px; border-radius:4px;
-  background:var(--cn-gradient-soft); color:var(--cn-accent);
-  font-size:10px; font-weight:600; vertical-align:1px;
+.day .postTitle a, .day .postTitle .postTitle2 {
+  color:var(--cn-text); transition:color .2s;
 }
-.cn-post-card__body .postDesc {
-  margin:10px 0 0; padding:8px 0 0; color:var(--cn-muted); font-size:10px;
+.day .postTitle a:hover, .day .postTitle .postTitle2:hover {
+  color:var(--cn-accent); text-decoration:none;
+}
+.day .postCon { margin:0; padding:0 18px; flex:1; }
+.day .postDesc { margin-top:auto; padding:10px 18px 14px; }
+.day .postDesc, .cn-post-card__body .postDesc {
+  color:var(--cn-muted); font-size:10px;
   border-top:1px solid var(--cn-border-soft);
 }
 .postDesc a { color:var(--cn-muted); }
 .postDesc a:hover { color:var(--cn-accent); }
+
+/* 摘要区 — 列表页摘要在 .c_b_p_desc */
+.c_b_p_desc {
+  margin:0; color:var(--cn-muted); font-size:12px; line-height:1.65;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.c_b_p_desc .c_b_p_desc_readmore { white-space:nowrap; margin-left:6px; }
+.cn-post-card__body { padding:12px 16px; flex:1; display:flex; flex-direction:column; }
+.cn-post-card__body .postDesc { margin:10px 0 0; padding:10px 0 0; }
+.cn-post-card__body .c_b_p_desc { flex:1; }
 
 /* ========= Article Hero Banner (detail page) ========= */
 .cn-article-hero {
