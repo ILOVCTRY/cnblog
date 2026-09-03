@@ -176,9 +176,10 @@
   }
 
   /* ---- Cover image resolution ---- */
-  var coverPool = window.CNB_COVER_POOL || [];
-  var coverMap = window.CNB_COVER_MAP || {};
-  var quotes = window.CNB_QUOTES || [];
+  // 惰性读取：侧边栏公告的 <script> 在 DOM 后部，初始化时可能尚未定义这些全局变量。
+  function getPool() { return window.CNB_COVER_POOL || []; }
+  function getMap() { return window.CNB_COVER_MAP || {}; }
+  function getQuotes() { return window.CNB_QUOTES || []; }
   var gradients = [
     'linear-gradient(135deg,#667eea 0%,#764ba2 100%)',
     'linear-gradient(135deg,#f093fb 0%,#f5576c 100%)',
@@ -195,14 +196,15 @@
     return Math.abs(h);
   }
   function getCoverUrl(title, bodyHTML) {
-    if (coverMap[title]) return coverMap[title];
+    if (getMap()[title]) return getMap()[title];
     if (bodyHTML) {
       var m1 = bodyHTML.match(/<!--cover:\s*(.*?)\s*-->/i);
       if (m1) return m1[1];
       var m2 = bodyHTML.match(/<img[^>]+src=["']([^"']+)["']/i);
       if (m2) return m2[1];
     }
-    if (coverPool.length) return coverPool[hashStr(title) % coverPool.length];
+    var pool = getPool();
+    if (pool.length) return pool[hashStr(title) % pool.length];
     return null;
   }
 
@@ -285,10 +287,10 @@
       heroTitle.textContent = detailTitleText;
       hero.appendChild(heroTitle);
 
-      if (quotes.length) {
+      if (getQuotes().length) {
         var heroQuote = document.createElement('p');
         heroQuote.className = 'cn-article-hero__quote';
-        heroQuote.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+        heroQuote.textContent = getQuotes()[Math.floor(Math.random() * getQuotes().length)];
         hero.appendChild(heroQuote);
       }
 
