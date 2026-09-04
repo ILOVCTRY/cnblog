@@ -497,14 +497,6 @@
     return url.href;
   }
 
-  function getNativePageCount() {
-    var pages = [getPageNumber(location.href)];
-    forFlow.querySelectorAll('a[href*="page="]').forEach(function (link) {
-      pages.push(getPageNumber(link.href));
-    });
-    return Math.max.apply(Math, pages);
-  }
-
   function fetchHomePage(page, currentNativePage) {
     if (page === currentNativePage) return Promise.resolve(document);
     return fetch(getHomePageUrl(page), { credentials:'same-origin' }).then(function (response) {
@@ -515,15 +507,36 @@
     });
   }
 
+  function fetchPublishedPostCount() {
+    var blogApp = window.currentBlogApp || location.pathname.split('/').filter(Boolean)[0];
+    if (!blogApp) return Promise.reject(new Error('blog app missing'));
+    return fetch('/' + encodeURIComponent(blogApp) + '/sitemap.xml', { credentials:'same-origin' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('sitemap failed: ' + response.status);
+        return response.text();
+      }).then(function (xmlText) {
+        var sitemap = new DOMParser().parseFromString(xmlText, 'application/xml');
+        if (sitemap.querySelector('parsererror')) throw new Error('invalid sitemap');
+        var seenPostIds = {};
+        Array.prototype.forEach.call(sitemap.getElementsByTagName('loc'), function (node) {
+          var match = node.textContent.trim().match(/\/p\/(\d+)(?:\.html)?\/?$/i);
+          if (match) seenPostIds[match[1]] = true;
+        });
+        var count = Object.keys(seenPostIds).length;
+        if (!count) throw new Error('sitemap contains no posts');
+        return count;
+      });
+  }
+
   function removeNativeHomePagers() {
     forFlow.querySelectorAll('.pager, .topicListFooter, #homepage_top_pager, #homepage_bottom_pager').forEach(function (pager) {
       pager.remove();
     });
   }
 
-  function createHomePager(currentPage, totalPages) {
+  function createHomePager(currentPage, totalPages, position) {
     var pager = document.createElement('nav');
-    pager.className = 'pager cn-home-pager';
+    pager.className = 'pager cn-home-pager cn-home-pager--' + position;
     pager.setAttribute('aria-label', '文章分页');
 
     function appendPageLink(label, page, isCurrent) {
@@ -545,22 +558,15 @@
   }
 
   function renderVirtualHomePage(pageSize, currentNativePage, sourcePosts) {
-    var nativePageCount = getNativePageCount();
-    if (nativePageCount < 2 || sourcePosts.length < 1) return Promise.resolve(false);
+    if (sourcePosts.length < 1) return Promise.resolve(false);
 
-    var firstPagePromise = currentNativePage === nativePageCount
-      ? fetchHomePage(1, currentNativePage)
-      : Promise.resolve(null);
-    return Promise.all([fetchHomePage(nativePageCount, currentNativePage), firstPagePromise]).then(function (documents) {
-      var lastDocument = documents[0];
-      var firstDocument = documents[1];
-      var lastFlow = lastDocument.querySelector('.forFlow');
-      var lastPosts = lastFlow ? collectHomePosts(lastFlow) : [];
-      var firstFlow = firstDocument && firstDocument.querySelector('.forFlow');
-      var firstPosts = firstFlow ? collectHomePosts(firstFlow) : sourcePosts;
+    return Promise.all([fetchPublishedPostCount(), fetchHomePage(1, currentNativePage)]).then(function (results) {
+      var totalPosts = results[0];
+      var firstDocument = results[1];
+      var firstFlow = firstDocument.querySelector('.forFlow');
+      var firstPosts = firstFlow ? collectHomePosts(firstFlow) : [];
       var nativePageSize = firstPosts.length;
       if (!nativePageSize) return false;
-      var totalPosts = (nativePageCount - 1) * nativePageSize + lastPosts.length;
       var totalPages = Math.ceil(totalPosts / pageSize);
       var requestedPage = getPageNumber(location.href);
       var currentPage = Math.min(requestedPage, totalPages);
@@ -575,7 +581,8 @@
       for (var nativePage = firstNativePage; nativePage <= lastNativePage; nativePage++) pageNumbers.push(nativePage);
 
       return Promise.all(pageNumbers.map(function (page) {
-        return fetchHomePage(page, currentNativePage).then(function (pageDocument) {
+        var pagePromise = page === 1 ? Promise.resolve(firstDocument) : fetchHomePage(page, currentNativePage);
+        return pagePromise.then(function (pageDocument) {
           var pageFlow = pageDocument.querySelector('.forFlow');
           return { page:page, posts:pageFlow ? collectHomePosts(pageFlow) : [] };
         });
@@ -589,8 +596,9 @@
         if (!posts.length) return false;
 
         removeNativeHomePagers();
+        forFlow.appendChild(createHomePager(currentPage, totalPages, 'top'));
         renderHomePosts(posts);
-        forFlow.appendChild(createHomePager(currentPage, totalPages));
+        forFlow.appendChild(createHomePager(currentPage, totalPages, 'bottom'));
         return true;
       });
     });
