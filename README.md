@@ -47,6 +47,7 @@ cnblog/
 | `wallpaper` | string | 壁纸图片 URL（HTTPS，留空为纯色背景） |
 | `avatar` | string | 头像 URL（预留） |
 | `links` | array | 导航链接，每项 `{ text, href }` |
+| `homePostsPerPage` | number | 首页每页文章数；主题会基于博客园原生分页连续重组文章 |
 | `showToc` | bool | 是否显示文章目录（默认 true） |
 | `showReadingProgress` | bool | 是否显示阅读进度条（默认 true） |
 | `codeCopy` | bool | 是否启用代码复制按钮（默认 true） |

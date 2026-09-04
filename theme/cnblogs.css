@@ -170,9 +170,9 @@ a:hover { color:var(--cn-accent-2); text-decoration:underline; }
   width:min(var(--cn-max-w),calc(100% - 32px));
   margin:28px auto 24px;
   display:grid; grid-template-columns:260px minmax(0,1fr); gap:28px;
-  align-items:start;
+  align-items:stretch;
 }
-#main { grid-column:2; min-width:0; width:auto!important; }
+#main { grid-column:2; min-width:0; width:auto!important; display:flex; }
 #mainContent { min-width:0; width:auto!important; }
 #mainContent {
   background:var(--cn-surface);
@@ -181,6 +181,9 @@ a:hover { color:var(--cn-accent-2); text-decoration:underline; }
   border-radius:var(--cn-radius-lg);
   box-shadow:var(--cn-shadow);
   padding:36px 40px;
+  /* Keep the post panel aligned with the viewport when the last grid row is short. */
+  min-height:calc(100vh - var(--cn-header-h) - 52px);
+  flex:1;
   backdrop-filter:blur(18px) saturate(135%);
   -webkit-backdrop-filter:blur(18px) saturate(135%);
   transition:box-shadow .3s;
@@ -350,7 +353,8 @@ body:has(#post_detail) .forFlow {
 .forFlow > .day,
 .forFlow > .cn-post-card { order:3; }
 .forFlow > .topicListFooter:not(#homepage_top_pager),
-.forFlow > #homepage_bottom_pager { order:4; }
+.forFlow > #homepage_bottom_pager,
+.forFlow > .cn-home-pager { order:4; }
 /* /p/ 与标签页由 JS 固定 DOM 顺序，外层只负责纵向排列。 */
 .cn-post-list-flow {
   display:flex;
@@ -820,7 +824,7 @@ body:has(#post_detail) #main {
   .cn-theme-nav a { padding:6px 10px; font-size:13px; }
   .cn-theme-subtitle { display:none; }
   #home { margin-top:16px; }
-  #mainContent { padding:24px 18px; border-radius:var(--cn-radius); }
+  #mainContent { min-height:0; padding:24px 18px; border-radius:var(--cn-radius); }
   body:has(#post_detail) #mainContent { padding-left:18px; padding-right:18px; }
   .forFlow { grid-template-columns:1fr; gap:14px; }
   .cn-post-list-flow { gap:14px; }

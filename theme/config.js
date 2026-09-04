@@ -18,6 +18,8 @@ window.CNB_THEME_CONFIG = {
   social: [
     { icon: 'G', title: 'GitHub', href: 'https://github.com/ILOVCTRY' }
   ],
+  // 首页按此数量重组博客园原生分页，避免卡片区留下整行空白。
+  homePostsPerPage: 12,
   showToc: true,
   tocMaxLevel: 3,
   showReadingProgress: true,

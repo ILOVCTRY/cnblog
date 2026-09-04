@@ -454,30 +454,166 @@
     return card;
   }
 
+  function collectHomePosts(rootEl) {
+    var posts = [];
+    var days = Array.prototype.slice.call(rootEl.querySelectorAll('.day'));
+    days.forEach(function (day) {
+      var dayTitle = day.querySelector('.dayTitle');
+      var dateText = dayTitle ? dayTitle.textContent.trim() : '';
+      var titles = Array.prototype.slice.call(day.querySelectorAll('.postTitle'));
+      titles.forEach(function (titleEl) {
+        var con = titleEl.nextElementSibling;
+        while (con && !con.classList.contains('postCon') && !con.classList.contains('postTitle')) con = con.nextElementSibling;
+        if (!con || !con.classList.contains('postCon')) return;
+
+        var desc = con.nextElementSibling;
+        while (desc && !desc.classList.contains('postDesc') && !desc.classList.contains('postTitle')) desc = desc.nextElementSibling;
+        if (desc && !desc.classList.contains('postDesc')) desc = null;
+        posts.push({ titleEl:titleEl, con:con, desc:desc, dateText:dateText });
+      });
+    });
+    return posts;
+  }
+
+  function renderHomePosts(posts) {
+    Array.prototype.slice.call(forFlow.querySelectorAll('.day')).forEach(function (day) { day.remove(); });
+    posts.forEach(function (post) {
+      var card = createPostCard(post.titleEl, post.con, post.desc, post.dateText);
+      /* 异步分页在滚动动画初始化后完成，直接显示新增卡片。 */
+      card.classList.add('is-visible');
+      forFlow.appendChild(card);
+    });
+  }
+
+  function getPageNumber(url) {
+    var value = Number(new URL(url, location.href).searchParams.get('page'));
+    return Number.isInteger(value) && value > 0 ? value : 1;
+  }
+
+  function getHomePageUrl(page) {
+    var url = new URL(location.href);
+    if (page <= 1) url.searchParams.delete('page');
+    else url.searchParams.set('page', String(page));
+    return url.href;
+  }
+
+  function getNativePageCount() {
+    var pages = [getPageNumber(location.href)];
+    forFlow.querySelectorAll('a[href*="page="]').forEach(function (link) {
+      pages.push(getPageNumber(link.href));
+    });
+    return Math.max.apply(Math, pages);
+  }
+
+  function fetchHomePage(page, currentNativePage) {
+    if (page === currentNativePage) return Promise.resolve(document);
+    return fetch(getHomePageUrl(page), { credentials:'same-origin' }).then(function (response) {
+      if (!response.ok) throw new Error('home page failed: ' + response.status);
+      return response.text();
+    }).then(function (html) {
+      return new DOMParser().parseFromString(html, 'text/html');
+    });
+  }
+
+  function removeNativeHomePagers() {
+    forFlow.querySelectorAll('.pager, .topicListFooter, #homepage_top_pager, #homepage_bottom_pager').forEach(function (pager) {
+      pager.remove();
+    });
+  }
+
+  function createHomePager(currentPage, totalPages) {
+    var pager = document.createElement('nav');
+    pager.className = 'pager cn-home-pager';
+    pager.setAttribute('aria-label', '文章分页');
+
+    function appendPageLink(label, page, isCurrent) {
+      var item = document.createElement(isCurrent ? 'span' : 'a');
+      item.textContent = label;
+      if (isCurrent) item.className = 'current';
+      else item.href = getHomePageUrl(page);
+      pager.appendChild(item);
+    }
+
+    if (currentPage > 1) appendPageLink('上一页', currentPage - 1, false);
+    for (var page = 1; page <= totalPages; page++) appendPageLink(String(page), page, page === currentPage);
+    if (currentPage < totalPages) appendPageLink('下一页', currentPage + 1, false);
+    return pager;
+  }
+
+  function isBlogHomePage() {
+    return /^\/[^/]+\/?$/.test(location.pathname);
+  }
+
+  function renderVirtualHomePage(pageSize, currentNativePage, sourcePosts) {
+    var nativePageCount = getNativePageCount();
+    if (nativePageCount < 2 || sourcePosts.length < 1) return Promise.resolve(false);
+
+    var firstPagePromise = currentNativePage === nativePageCount
+      ? fetchHomePage(1, currentNativePage)
+      : Promise.resolve(null);
+    return Promise.all([fetchHomePage(nativePageCount, currentNativePage), firstPagePromise]).then(function (documents) {
+      var lastDocument = documents[0];
+      var firstDocument = documents[1];
+      var lastFlow = lastDocument.querySelector('.forFlow');
+      var lastPosts = lastFlow ? collectHomePosts(lastFlow) : [];
+      var firstFlow = firstDocument && firstDocument.querySelector('.forFlow');
+      var firstPosts = firstFlow ? collectHomePosts(firstFlow) : sourcePosts;
+      var nativePageSize = firstPosts.length;
+      if (!nativePageSize) return false;
+      var totalPosts = (nativePageCount - 1) * nativePageSize + lastPosts.length;
+      var totalPages = Math.ceil(totalPosts / pageSize);
+      var requestedPage = getPageNumber(location.href);
+      var currentPage = Math.min(requestedPage, totalPages);
+      if (currentPage < 1 || !totalPages) return false;
+      if (currentPage !== requestedPage) history.replaceState(null, '', getHomePageUrl(currentPage));
+
+      var start = (currentPage - 1) * pageSize;
+      var end = Math.min(start + pageSize, totalPosts);
+      var firstNativePage = Math.floor(start / nativePageSize) + 1;
+      var lastNativePage = Math.floor((end - 1) / nativePageSize) + 1;
+      var pageNumbers = [];
+      for (var nativePage = firstNativePage; nativePage <= lastNativePage; nativePage++) pageNumbers.push(nativePage);
+
+      return Promise.all(pageNumbers.map(function (page) {
+        return fetchHomePage(page, currentNativePage).then(function (pageDocument) {
+          var pageFlow = pageDocument.querySelector('.forFlow');
+          return { page:page, posts:pageFlow ? collectHomePosts(pageFlow) : [] };
+        });
+      })).then(function (pages) {
+        var allPosts = [];
+        pages.sort(function (a, b) { return a.page - b.page; }).forEach(function (page) {
+          allPosts = allPosts.concat(page.posts);
+        });
+        var offset = start - (firstNativePage - 1) * nativePageSize;
+        var posts = allPosts.slice(offset, offset + pageSize);
+        if (!posts.length) return false;
+
+        removeNativeHomePagers();
+        renderHomePosts(posts);
+        forFlow.appendChild(createHomePager(currentPage, totalPages));
+        return true;
+      });
+    });
+  }
+
   /* ---- Split posts from .day into cover cards ---- */
   var forFlow = document.querySelector('.forFlow');
   var pendingCovers = [];
   var pendingQuotes = [];
   if (forFlow) {
     var days = Array.prototype.slice.call(forFlow.querySelectorAll('.day'));
-    days.forEach(function (day) {
-      var dateText = '';
-      var dayTitle = day.querySelector('.dayTitle');
-      if (dayTitle) { dateText = dayTitle.textContent.trim(); dayTitle.remove(); }
-      var titles = Array.prototype.slice.call(day.querySelectorAll('.postTitle'));
-      titles.forEach(function (el) {
-        var con = el.nextElementSibling;
-        while (con && !con.classList.contains('postCon') && !con.classList.contains('postTitle')) con = con.nextElementSibling;
-        if (!con || !con.classList.contains('postCon')) return;
-        var desc = con.nextElementSibling;
-        while (desc && !desc.classList.contains('postDesc') && !desc.classList.contains('postTitle')) desc = desc.nextElementSibling;
-        if (desc && !desc.classList.contains('postDesc')) desc = null;
-
-        var card = createPostCard(el, con, desc, dateText);
-        forFlow.insertBefore(card, day);
+    var homePosts = collectHomePosts(forFlow);
+    var homePageSize = Number(cfg.homePostsPerPage || 12);
+    var currentNativePage = getPageNumber(location.href);
+    var useVirtualHomePaging = isBlogHomePage() && homePosts.length && Number.isInteger(homePageSize) && homePageSize > homePosts.length;
+    if (useVirtualHomePaging) {
+      renderVirtualHomePage(homePageSize, currentNativePage, homePosts).then(function (rendered) {
+        if (!rendered) renderHomePosts(homePosts);
+      }).catch(function () {
+        /* 网络不可用时维持博客园原生分页，避免首页内容消失。 */
+        renderHomePosts(homePosts);
       });
-      day.remove();
-    });
+    } else if (days.length) renderHomePosts(homePosts);
 
     /* 标签页使用 .PostList 结构，没有首页的 .day 容器。 */
     var tagPosts = Array.prototype.slice.call(forFlow.querySelectorAll('.PostList'));
