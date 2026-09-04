@@ -26,11 +26,21 @@
 
 ### 2.4 加载 JS 脚本
 
-在页脚 HTML 内容的**末尾**追加两个 `<script>` 标签，先加载配置再加载主题逻辑。
+`theme/footer.html` 已包含两个 `<script>` 标签，先加载配置再加载主题逻辑。推荐使用 GitHub/jsDelivr 地址；不要在页脚 HTML 中再次追加脚本。
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/ILOVCTRY/cnblog@bae80a510bf0c55d253c8d0e8e2c0c27acf70998/theme/config.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/ILOVCTRY/cnblog@bae80a510bf0c55d253c8d0e8e2c0c27acf70998/theme/cnblogs.js"></script>
+```
+
+注意：切换 URL 查询参数（例如 `?v=...`）不能可靠地刷新 jsDelivr 的 `@main` 缓存。更新 GitHub 后，请使用以下任一方式刷新：
+
+1. 推荐：将 `@main` 替换为远程仓库实际存在的完整 SHA。
+2. 继续使用 `@main` 时，访问 `https://purge.jsdelivr.net/gh/ILOVCTRY/cnblog/theme/config.js` 和 `https://purge.jsdelivr.net/gh/ILOVCTRY/cnblog/theme/cnblogs.js` 触发清理，然后强制刷新页面。
 
 **方式一：CDN 引用（推荐）**
 
-通过 jsDelivr CDN 加载，自动跟随仓库更新：
+将 `footer.html` 中的两个 URL 替换为 jsDelivr CDN 地址：
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/ILOVCTRY/cnblog@main/theme/config.js"></script>
